@@ -1,32 +1,24 @@
-/********************************************************************************
-** Form generated from reading UI file 'UIMain.ui'
-**
-** Created by: Qt User Interface Compiler version 5.9.5
-**
-** WARNING! All changes made in this file will be lost when recompiling UI file!
-********************************************************************************/
-
 #ifndef UIDFRAGSMART_H
 #define UIDFRAGSMART_H
 
 #include "UIMain.hpp"
-#include <QtWidgets/QLabel>
 #include <QTimer>
+#include <QStandardItemModel>
 
 // Point Cloud Library
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-#include <QStandardItemModel>
-
 // Visualization Toolkit (VTK)
 #include <vtkRenderWindow.h>
 #include "QVTKWidget.h"
 
-#include <ros/ros.h>
+//OpenCV
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include <ros/ros.h>
 
 using namespace cv;
 
@@ -46,20 +38,26 @@ class UIDfragSmart : public QMainWindow
     
 public:
 
-  QVTKWidget *qvtkWidget;
-  QImage imDisplay;  //This will create QImage which is shown in Qt label
+  QPushButton *btnFoto;
+  QImage imDisplay;
   QTimer* timer;
   QStandardItemModel *model;
-  pcl::visualization::PCLVisualizer::Ptr viewer;
+  QVTKWidget *qvtkWidget;  
+
   unsigned int thumbnailCounter = 0;
-  std::vector<QImage> imVector;
   const unsigned int MAX_THUMBAILS = 10;
+  std::vector<QImage> imVector;
+
   bool isImageReady = false;
   bool isLblImReady = false;
   bool isPointcloudReady = false;
-  Ui::mainWindow ui;
+  bool isQvtkCloudReady = false;
+  
   Mat *img;
+  pcl::visualization::PCLVisualizer::Ptr viewer;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRaw;
+
+  Ui::mainWindow ui;
 
   UIDfragSmart(Mat* img, pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRaw)
   {
@@ -67,6 +65,11 @@ public:
 
     this->img = img;
     this->zedCloudRaw = zedCloudRaw;
+
+    btnFoto = new QPushButton(ui.centralwidget);
+    btnFoto->setObjectName(QStringLiteral("btnFoto"));
+    btnFoto->setText(QApplication::translate("mainWindow", "Shoot", Q_NULLPTR));
+    ui.gridLayout->addWidget(btnFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
 
     qvtkWidget = new QVTKWidget();      
     qvtkWidget->setObjectName(QStringLiteral("qvtkWidget"));
@@ -84,7 +87,6 @@ public:
     viewer->setupInteractor (qvtkWidget->GetInteractor (), qvtkWidget->GetRenderWindow ());
     viewer->addPointCloud (zedCloudRaw, "zedCloudRaw");
     viewer->resetCamera ();  
-    isLblImReady = true;
 
     model = new QStandardItemModel(this);
     model->insertColumn(0);
@@ -94,16 +96,20 @@ public:
     this->setWindowState(Qt::WindowMaximized);
     connect (ui.btnImagen,  SIGNAL (clicked ()), this, SLOT (btnImagenPressed ()));
     connect (ui.btnPointcloud,  SIGNAL (clicked ()), this, SLOT (btnPointcloudPressed ()));
-    connect (ui.btnFoto,  SIGNAL (clicked ()), this, SLOT (btnFotoPressed ()));
+    connect (btnFoto,  SIGNAL (clicked ()), this, SLOT (btnFotoPressed ()));
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(displayImage()) );
     timer->start(200);
+
+    isLblImReady = true;
+    isQvtkCloudReady = true;
   }
 
   ~UIDfragSmart()
   {
     delete qvtkWidget;
     delete timer;
+    delete btnFoto;
     delete model;
     delete img;
     delete ui.centralwidget;
@@ -119,8 +125,7 @@ public:
     delete ui.lstIm;
     delete ui.verticalLayout_2;
     delete ui.btnImagen;
-    delete ui.btnPointcloud;
-    delete ui.btnFoto;
+    delete ui.btnPointcloud;    
   }
 
   Q_OBJECT
@@ -135,37 +140,35 @@ public:
             img->cols, img->rows, img->step, QImage::Format_RGB888); //Format conversion
           
       ui.lblIm->setPixmap(QPixmap::fromImage(imDisplay));
-    }  
+    }
+    isImageReady = false; 
   }
 
   void btnImagenPressed()
   {
-    ui.gridLayout->removeWidget(qvtkWidget);
-    qvtkWidget->setParent(NULL);
     isLblImReady = true;
-    
+    isQvtkCloudReady = false;
     ui.lblIm->setParent(ui.centralwidget);
     ui.gridLayout->addWidget(ui.lblIm, 0, 0, 1, 1);
+    btnFoto->setParent(ui.centralwidget);
+    ui.gridLayout->addWidget(btnFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
     ui.gridLayout->update();
+    ui.gridLayout->removeWidget(qvtkWidget);
+    qvtkWidget->setParent(NULL);
   }
 
   void btnPointcloudPressed()
-  {
-    //ui.verticalLayout->removeWidget(ui.lstIm);
-    //ui.lstIm->setParent(NULL);
-    ui.gridLayout->removeWidget(ui.lblIm);
-    ui.lblIm->setParent(NULL);  
+  { 
     isLblImReady = false;
-    
-    //ui.lstIm->setParent(ui.centralwidget);
-    //ui.verticalLayout->addWidget(ui.lstIm);
+    isQvtkCloudReady = true;   
     qvtkWidget->setParent(ui.centralwidget);
     ui.gridLayout->addWidget(qvtkWidget, 0, 0, 1, 1);
-    ui.gridLayout->update();
-
-    //viewer.reset (new pcl::visualization::PCLVisualizer ("viewer", false));
-    //qvtkWidget->SetRenderWindow (viewer->getRenderWindow ());
-    //viewer->setupInteractor (qvtkWidget->GetInteractor (), qvtkWidget->GetRenderWindow ());
+    ui.gridLayout->removeWidget(ui.lblIm);
+    ui.lblIm->setParent(NULL);
+    ui.gridLayout->removeWidget(btnFoto);
+    btnFoto->setParent(NULL);    
+    ui.gridLayout->update();    
+    
     viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
     qvtkWidget->update ();
   }
@@ -177,14 +180,9 @@ public:
     
     imVector[thumbnailCounter] = thumbnail;
 
-    //for(int i=0;i<numRows ;++i)
-    //QPixmap pixmap = QPixmap::fromImage(thumbnail);  
     for(int i=0; i<MAX_THUMBAILS; ++i)
       model->setData(model->index(i,0),QPixmap::fromImage(imVector[i]),Qt::DecorationRole); 
     
-    //model->setData(model->index(0,0),QPixmap::fromImage(imVector[thumbnailCounter]),Qt::DecorationRole); 
-
-    //std::cout<<imVector.size()<<std::endl;
     ui.lstIm->setModel(model);
     thumbnailCounter = (thumbnailCounter==MAX_THUMBAILS-1)?(MAX_THUMBAILS-1):(thumbnailCounter+1);
   }

@@ -42,13 +42,12 @@ public:
     QVBoxLayout *verticalLayout_2;
     QPushButton *btnImagen;
     QPushButton *btnPointcloud;
-    QPushButton *btnFoto;
 
     void setupUi(QMainWindow *mainWindow)
     {
         if (mainWindow->objectName().isEmpty())
             mainWindow->setObjectName(QStringLiteral("mainWindow"));
-        mainWindow->resize(1613, 863);
+        mainWindow->resize(1735, 927);
         mainWindow->setMinimumSize(QSize(0, 0));
         mainWindow->setMaximumSize(QSize(5000, 5000));
         centralwidget = new QWidget(mainWindow);
@@ -133,11 +132,6 @@ public:
 
         verticalLayout_2->addWidget(btnPointcloud);
 
-        btnFoto = new QPushButton(centralwidget);
-        btnFoto->setObjectName(QStringLiteral("btnFoto"));
-
-        verticalLayout_2->addWidget(btnFoto);
-
 
         horizontalLayout->addLayout(verticalLayout_2);
 
@@ -157,7 +151,6 @@ public:
         lblIm->setText(QString());
         btnImagen->setText(QString());
         btnPointcloud->setText(QString());
-        btnFoto->setText(QApplication::translate("mainWindow", "Shoot", Q_NULLPTR));
     } // retranslateUi
 
 };

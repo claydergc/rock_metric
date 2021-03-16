@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1613</width>
-    <height>863</height>
+    <width>1735</width>
+    <height>927</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -151,13 +151,6 @@
        <widget class="QPushButton" name="btnPointcloud">
         <property name="text">
          <string/>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnFoto">
-        <property name="text">
-         <string>Shoot</string>
         </property>
        </widget>
       </item>
