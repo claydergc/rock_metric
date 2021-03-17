@@ -38,7 +38,8 @@ class UIDfragSmart : public QMainWindow
     
 public:
 
-  QPushButton *btnFoto;
+  QPushButton *btnTomarFoto;
+  QPushButton *btnGuardarFoto;
   QImage imDisplay;
   QTimer* timer;
   QStandardItemModel *model;
@@ -46,16 +47,20 @@ public:
 
   unsigned int thumbnailCounter = 0;
   const unsigned int MAX_THUMBAILS = 10;
+  const unsigned char VIEWER_IMAGE = 0;
+  const unsigned char VIEWER_POINTCLOUD = 1;
   std::vector<QImage> imVector;
 
   bool isImageReady = false;
   bool isLblImReady = false;
   bool isPointcloudReady = false;
   bool isQvtkCloudReady = false;
+  unsigned char viewerState = VIEWER_IMAGE;
   
   Mat *img;
   pcl::visualization::PCLVisualizer::Ptr viewer;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRaw;
+  pcl::PointCloud<pcl::PointXYZRGB> zedCloudRawPhoto;
 
   Ui::mainWindow ui;
 
@@ -66,10 +71,18 @@ public:
     this->img = img;
     this->zedCloudRaw = zedCloudRaw;
 
-    btnFoto = new QPushButton(ui.centralwidget);
-    btnFoto->setObjectName(QStringLiteral("btnFoto"));
-    btnFoto->setText(QApplication::translate("mainWindow", "Shoot", Q_NULLPTR));
-    ui.gridLayout->addWidget(btnFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
+    ui.btnPointcloud->setEnabled(false);
+
+    btnTomarFoto = new QPushButton(ui.centralwidget);
+    btnTomarFoto->setObjectName(QStringLiteral("btnTomarFoto"));
+    btnTomarFoto->setText(QApplication::translate("mainWindow", "Shoot", Q_NULLPTR));
+    ui.gridLayout->addWidget(btnTomarFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
+
+    btnGuardarFoto = new QPushButton(ui.centralwidget);
+    btnGuardarFoto->setObjectName(QStringLiteral("btnGuardarFoto"));
+    btnGuardarFoto->setText(QApplication::translate("mainWindow", "Guardar Foto", Q_NULLPTR));
+    ui.gridLayout->addWidget(btnGuardarFoto, 0, 0, 1, 1, Qt::AlignRight|Qt::AlignBottom);
+    btnGuardarFoto->setVisible(false);
 
     qvtkWidget = new QVTKWidget();      
     qvtkWidget->setObjectName(QStringLiteral("qvtkWidget"));
@@ -96,7 +109,8 @@ public:
     this->setWindowState(Qt::WindowMaximized);
     connect (ui.btnImagen,  SIGNAL (clicked ()), this, SLOT (btnImagenPressed ()));
     connect (ui.btnPointcloud,  SIGNAL (clicked ()), this, SLOT (btnPointcloudPressed ()));
-    connect (btnFoto,  SIGNAL (clicked ()), this, SLOT (btnFotoPressed ()));
+    connect (btnTomarFoto,  SIGNAL (clicked ()), this, SLOT (btnTomarFotoPressed ()));
+    connect (btnGuardarFoto,  SIGNAL (clicked ()), this, SLOT (btnGuardarFotoPressed ()));
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(displayImage()) );
     timer->start(200);
@@ -109,7 +123,7 @@ public:
   {
     delete qvtkWidget;
     delete timer;
-    delete btnFoto;
+    delete btnTomarFoto;
     delete model;
     delete img;
     delete ui.centralwidget;
@@ -146,35 +160,79 @@ public:
 
   void btnImagenPressed()
   {
-    isLblImReady = true;
-    isQvtkCloudReady = false;
-    ui.lblIm->setParent(ui.centralwidget);
-    ui.gridLayout->addWidget(ui.lblIm, 0, 0, 1, 1);
-    btnFoto->setParent(ui.centralwidget);
-    ui.gridLayout->addWidget(btnFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
-    ui.gridLayout->update();
-    ui.gridLayout->removeWidget(qvtkWidget);
-    qvtkWidget->setParent(NULL);
+    if(viewerState==VIEWER_POINTCLOUD)
+    {
+      isLblImReady = true;
+      isQvtkCloudReady = false;
+      ui.lblIm->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(ui.lblIm, 0, 0, 1, 1);
+      
+      btnTomarFoto->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(btnTomarFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
+      btnTomarFoto->setVisible(true);
+
+      btnGuardarFoto->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(btnGuardarFoto, 0, 0, 1, 1, Qt::AlignRight|Qt::AlignBottom);
+      btnGuardarFoto->setVisible(false);
+
+      ui.gridLayout->removeWidget(qvtkWidget);
+      qvtkWidget->setParent(NULL);
+
+      ui.btnPointcloud->setEnabled(false);
+      ui.gridLayout->update();
+      viewerState=VIEWER_IMAGE;
+    }
   }
 
   void btnPointcloudPressed()
   { 
-    isLblImReady = false;
-    isQvtkCloudReady = true;   
-    qvtkWidget->setParent(ui.centralwidget);
-    ui.gridLayout->addWidget(qvtkWidget, 0, 0, 1, 1);
-    ui.gridLayout->removeWidget(ui.lblIm);
-    ui.lblIm->setParent(NULL);
-    ui.gridLayout->removeWidget(btnFoto);
-    btnFoto->setParent(NULL);    
-    ui.gridLayout->update();    
-    
-    viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
-    qvtkWidget->update ();
+    if(viewerState==VIEWER_IMAGE && !isImageReady && !isLblImReady)// Si se tomo foto
+    {
+      isLblImReady = false;
+      //isQvtkCloudReady = true;
+      qvtkWidget->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(qvtkWidget, 0, 0, 1, 1);
+      ui.gridLayout->removeWidget(ui.lblIm);
+      ui.lblIm->setParent(NULL);
+      
+      ui.gridLayout->removeWidget(btnTomarFoto);
+      btnTomarFoto->setParent(NULL);
+
+      ui.gridLayout->removeWidget(btnGuardarFoto);
+      btnGuardarFoto->setParent(NULL);
+      
+      ui.gridLayout->update();    
+      
+      //viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRawPhotoAux(new pcl::PointCloud<pcl::PointXYZRGB>);;
+      *zedCloudRawPhotoAux = zedCloudRawPhoto;
+      viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
+      qvtkWidget->update ();
+      viewerState=VIEWER_POINTCLOUD;
+    }
   }
 
-  void btnFotoPressed()
+  void btnTomarFotoPressed()
   {
+    isImageReady = false;
+    isLblImReady = false;
+    btnTomarFoto->setVisible(false);
+    btnGuardarFoto->setVisible(true);
+    /*QImage thumbnail = imDisplay;
+    thumbnail = thumbnail.scaled(200, 100, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    
+    imVector[thumbnailCounter] = thumbnail;
+
+    for(int i=0; i<MAX_THUMBAILS; ++i)
+      model->setData(model->index(i,0),QPixmap::fromImage(imVector[i]),Qt::DecorationRole); 
+    
+    ui.lstIm->setModel(model);
+    thumbnailCounter = (thumbnailCounter==MAX_THUMBAILS-1)?(MAX_THUMBAILS-1):(thumbnailCounter+1);*/
+  }
+
+  void btnGuardarFotoPressed()
+  { 
+    isQvtkCloudReady = true;
     QImage thumbnail = imDisplay;
     thumbnail = thumbnail.scaled(200, 100, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     
@@ -185,6 +243,10 @@ public:
     
     ui.lstIm->setModel(model);
     thumbnailCounter = (thumbnailCounter==MAX_THUMBAILS-1)?(MAX_THUMBAILS-1):(thumbnailCounter+1);
+
+    ui.btnPointcloud->setEnabled(true);
+    zedCloudRawPhoto = *zedCloudRaw;
+    isQvtkCloudReady = false;
   }
 
 };
