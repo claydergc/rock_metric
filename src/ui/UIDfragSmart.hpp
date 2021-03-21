@@ -19,6 +19,10 @@
 #include <opencv2/imgproc.hpp>
 
 #include <ros/ros.h>
+#include "std_msgs/String.h"
+#include <sstream>
+
+#include <chrono>
 
 using namespace cv;
 
@@ -64,10 +68,13 @@ public:
 
   Ui::mainWindow ui;
 
-  UIDfragSmart(Mat* img, pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRaw)
+  ros::Publisher* pubGainExposure;
+
+  UIDfragSmart(ros::Publisher* pubGainExposure, Mat* img, pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRaw)
   {
     ui.setupUi(this);
 
+    this->pubGainExposure = pubGainExposure;
     this->img = img;
     this->zedCloudRaw = zedCloudRaw;
 
@@ -111,9 +118,11 @@ public:
     connect (ui.btnPointcloud,  SIGNAL (clicked ()), this, SLOT (btnPointcloudPressed ()));
     connect (btnTomarFoto,  SIGNAL (clicked ()), this, SLOT (btnTomarFotoPressed ()));
     connect (btnGuardarFoto,  SIGNAL (clicked ()), this, SLOT (btnGuardarFotoPressed ()));
+    connect(ui.sldGain, SIGNAL(valueChanged(int)), this, SLOT(onGainSliderChange(int)));
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(displayImage()) );
-    timer->start(200);
+    //timer->start(200);
+    timer->start(199);
 
     isLblImReady = true;
     isQvtkCloudReady = true;
@@ -126,6 +135,7 @@ public:
     delete btnTomarFoto;
     delete model;
     delete img;
+    delete pubGainExposure;
     delete ui.centralwidget;
     delete ui.horizontalLayout;
     delete ui.verticalLayout_3;
@@ -149,11 +159,17 @@ public:
     ros::spinOnce(); 
     if(isImageReady && isLblImReady)
     {
+      auto start = std::chrono::steady_clock::now();
       cv::cvtColor(*img, *img, cv::COLOR_BGR2RGB);
       imDisplay = QImage((const unsigned char*)img->data, // uchar* data
             img->cols, img->rows, img->step, QImage::Format_RGB888); //Format conversion
           
       ui.lblIm->setPixmap(QPixmap::fromImage(imDisplay));
+      auto end = std::chrono::steady_clock::now();
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      //std::cout<<elapsed.count()<<std::endl;
+      timer->setInterval(200-elapsed.count());
+
     }
     isImageReady = false; 
   }
@@ -247,6 +263,27 @@ public:
     ui.btnPointcloud->setEnabled(true);
     zedCloudRawPhoto = *zedCloudRaw;
     isQvtkCloudReady = false;
+  }
+
+  void onGainSliderChange(int position) 
+  {
+    // Calculate float position of slider
+    //float positionF = position / float(STEPS);
+    //m_textEdit->setText( QString::number(positionF, 'f', 2) );
+    
+    //std::cout<<position<<std::endl;
+    std_msgs::String msg;
+    std::stringstream ss;
+    ss << position;
+    msg.data = ss.str();    
+
+    /**
+     * The publish() function is how you send messages. The parameter
+     * is the message object. The type of this object must agree with the type
+     * given as a template parameter to the advertise<>() call, as was done
+     * in the constructor above.
+     */
+    pubGainExposure->publish(msg);
   }
 
 };

@@ -20,6 +20,7 @@
 #include <QtWidgets/QListView>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSlider>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
@@ -39,6 +40,11 @@ public:
     QGridLayout *gridLayout;
     QLabel *lblIm;
     QListView *lstIm;
+    QHBoxLayout *horizontalLayout_3;
+    QLabel *label;
+    QSlider *sldGain;
+    QLabel *label_2;
+    QSlider *sldExposure;
     QVBoxLayout *verticalLayout_2;
     QPushButton *btnImagen;
     QPushButton *btnPointcloud;
@@ -47,7 +53,7 @@ public:
     {
         if (mainWindow->objectName().isEmpty())
             mainWindow->setObjectName(QStringLiteral("mainWindow"));
-        mainWindow->resize(1735, 927);
+        mainWindow->resize(1703, 927);
         mainWindow->setMinimumSize(QSize(0, 0));
         mainWindow->setMaximumSize(QSize(5000, 5000));
         centralwidget = new QWidget(mainWindow);
@@ -110,7 +116,36 @@ public:
         lstIm->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         lstIm->setFlow(QListView::LeftToRight);
 
-        gridLayout->addWidget(lstIm, 1, 0, 1, 1);
+        gridLayout->addWidget(lstIm, 2, 0, 1, 1);
+
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setObjectName(QStringLiteral("horizontalLayout_3"));
+        label = new QLabel(centralwidget);
+        label->setObjectName(QStringLiteral("label"));
+
+        horizontalLayout_3->addWidget(label);
+
+        sldGain = new QSlider(centralwidget);
+        sldGain->setObjectName(QStringLiteral("sldGain"));
+        sldGain->setMaximum(100);
+        sldGain->setValue(100);
+        sldGain->setOrientation(Qt::Horizontal);
+
+        horizontalLayout_3->addWidget(sldGain);
+
+        label_2 = new QLabel(centralwidget);
+        label_2->setObjectName(QStringLiteral("label_2"));
+
+        horizontalLayout_3->addWidget(label_2);
+
+        sldExposure = new QSlider(centralwidget);
+        sldExposure->setObjectName(QStringLiteral("sldExposure"));
+        sldExposure->setOrientation(Qt::Horizontal);
+
+        horizontalLayout_3->addWidget(sldExposure);
+
+
+        gridLayout->addLayout(horizontalLayout_3, 1, 0, 1, 1);
 
 
         horizontalLayout->addLayout(gridLayout);
@@ -149,6 +184,8 @@ public:
         pushButton_4->setText(QApplication::translate("mainWindow", "PushButton", Q_NULLPTR));
         pushButton_5->setText(QApplication::translate("mainWindow", "PushButton", Q_NULLPTR));
         lblIm->setText(QString());
+        label->setText(QApplication::translate("mainWindow", "Gain:", Q_NULLPTR));
+        label_2->setText(QApplication::translate("mainWindow", "Exposure", Q_NULLPTR));
         btnImagen->setText(QString());
         btnPointcloud->setText(QString());
     } // retranslateUi
