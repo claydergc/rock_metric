@@ -24,7 +24,8 @@ UIDfragSmart* window;
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  if(window->isLblImReady)
+  //if(window->isLblImReady)
+  if(!window->isPhotoTaken)
   {
     img = cv_bridge::toCvShare(msg, "bgr8")->image;
     window->isImageReady = true;
@@ -35,10 +36,11 @@ void zedCloudHandler(const sensor_msgs::PointCloud2ConstPtr& zedCloudMsg)
 {  
 	//double timeScanCur = zedCloudMsg->header.stamp.toSec();
   //if(window->isQvtkCloudReady)
-  //{
+  if(!window->isPhotoTaken)
+  {
 	  pcl::fromROSMsg(*zedCloudMsg, *zedCloudRaw);
-    window->isPointcloudReady = true;
-  //}
+    //window->isPointcloudReady = true;
+  }
 }
 
 int main(int argc, char **argv)

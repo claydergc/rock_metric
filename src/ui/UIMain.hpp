@@ -48,6 +48,7 @@ public:
     QVBoxLayout *verticalLayout_2;
     QPushButton *btnImagen;
     QPushButton *btnPointcloud;
+    QPushButton *btnRegresarAFoto;
 
     void setupUi(QMainWindow *mainWindow)
     {
@@ -140,6 +141,8 @@ public:
 
         sldExposure = new QSlider(centralwidget);
         sldExposure->setObjectName(QStringLiteral("sldExposure"));
+        sldExposure->setMaximum(100);
+        sldExposure->setValue(100);
         sldExposure->setOrientation(Qt::Horizontal);
 
         horizontalLayout_3->addWidget(sldExposure);
@@ -167,6 +170,11 @@ public:
 
         verticalLayout_2->addWidget(btnPointcloud);
 
+        btnRegresarAFoto = new QPushButton(centralwidget);
+        btnRegresarAFoto->setObjectName(QStringLiteral("btnRegresarAFoto"));
+
+        verticalLayout_2->addWidget(btnRegresarAFoto);
+
 
         horizontalLayout->addLayout(verticalLayout_2);
 
@@ -188,6 +196,7 @@ public:
         label_2->setText(QApplication::translate("mainWindow", "Exposure", Q_NULLPTR));
         btnImagen->setText(QString());
         btnPointcloud->setText(QString());
+        btnRegresarAFoto->setText(QString());
     } // retranslateUi
 
 };

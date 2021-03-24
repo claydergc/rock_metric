@@ -44,6 +44,7 @@ public:
 
   QPushButton *btnTomarFoto;
   QPushButton *btnGuardarFoto;
+  //QPushButton *btnRegresarAFoto;
   QImage imDisplay;
   QTimer* timer;
   QStandardItemModel *model;
@@ -53,12 +54,13 @@ public:
   const unsigned int MAX_THUMBAILS = 10;
   const unsigned char VIEWER_IMAGE = 0;
   const unsigned char VIEWER_POINTCLOUD = 1;
+  const unsigned char VIEWER_PHOTO = 2;
   std::vector<QImage> imVector;
 
   bool isImageReady = false;
-  bool isLblImReady = false;
-  bool isPointcloudReady = false;
-  bool isQvtkCloudReady = false;
+  bool isPhotoTaken = false;
+  //bool isPointcloudReady = false;
+  //bool isQvtkCloudReady = false;
   unsigned char viewerState = VIEWER_IMAGE;
   
   Mat *img;
@@ -91,6 +93,14 @@ public:
     ui.gridLayout->addWidget(btnGuardarFoto, 0, 0, 1, 1, Qt::AlignRight|Qt::AlignBottom);
     btnGuardarFoto->setVisible(false);
 
+    //btnRegresarAFoto = new QPushButton(ui.centralwidget);
+    //btnRegresarAFoto->setObjectName(QStringLiteral("btnRegresarAFoto"));
+    //btnRegresarAFoto->setText(QApplication::translate("mainWindow", "Regresar a Foto", Q_NULLPTR));
+    //ui.gridLayout->addWidget(btnRegresarAFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignTop);
+    //btnRegresarAFoto->setVisible(false);
+
+    ui.btnRegresarAFoto->setEnabled(false);
+
     qvtkWidget = new QVTKWidget();      
     qvtkWidget->setObjectName(QStringLiteral("qvtkWidget"));
     QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -118,14 +128,16 @@ public:
     connect (ui.btnPointcloud,  SIGNAL (clicked ()), this, SLOT (btnPointcloudPressed ()));
     connect (btnTomarFoto,  SIGNAL (clicked ()), this, SLOT (btnTomarFotoPressed ()));
     connect (btnGuardarFoto,  SIGNAL (clicked ()), this, SLOT (btnGuardarFotoPressed ()));
+    connect (ui.btnRegresarAFoto,  SIGNAL (clicked ()), this, SLOT (btnRegresarAFotoPressed ()));
     connect(ui.sldGain, SIGNAL(valueChanged(int)), this, SLOT(onGainSliderChange(int)));
+    connect(ui.sldExposure, SIGNAL(valueChanged(int)), this, SLOT(onExposureSliderChange(int)));
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(displayImage()) );
     //timer->start(200);
     timer->start(199);
 
-    isLblImReady = true;
-    isQvtkCloudReady = true;
+    //isLblImReady = true;
+    //isQvtkCloudReady = true;
   }
 
   ~UIDfragSmart()
@@ -149,7 +161,10 @@ public:
     delete ui.lstIm;
     delete ui.verticalLayout_2;
     delete ui.btnImagen;
-    delete ui.btnPointcloud;    
+    delete ui.btnPointcloud;
+    delete ui.sldGain;
+    delete ui.sldExposure;
+    delete ui.btnRegresarAFoto;
   }
 
   Q_OBJECT
@@ -157,7 +172,8 @@ public:
   void displayImage()
   {
     ros::spinOnce(); 
-    if(isImageReady && isLblImReady)
+    //if(isImageReady && isLblImReady)
+    if(isImageReady)
     {
       auto start = std::chrono::steady_clock::now();
       cv::cvtColor(*img, *img, cv::COLOR_BGR2RGB);
@@ -176,10 +192,12 @@ public:
 
   void btnImagenPressed()
   {
-    if(viewerState==VIEWER_POINTCLOUD)
+    //if(viewerState==VIEWER_POINTCLOUD)
+    if(isPhotoTaken)
     {
-      isLblImReady = true;
-      isQvtkCloudReady = false;
+      //isLblImReady = true;
+      //isQvtkCloudReady = false;
+      isPhotoTaken = false;
       ui.lblIm->setParent(ui.centralwidget);
       ui.gridLayout->addWidget(ui.lblIm, 0, 0, 1, 1);
       
@@ -195,6 +213,7 @@ public:
       qvtkWidget->setParent(NULL);
 
       ui.btnPointcloud->setEnabled(false);
+      ui.btnRegresarAFoto->setEnabled(false);
       ui.gridLayout->update();
       viewerState=VIEWER_IMAGE;
     }
@@ -202,9 +221,11 @@ public:
 
   void btnPointcloudPressed()
   { 
-    if(viewerState==VIEWER_IMAGE && !isImageReady && !isLblImReady)// Si se tomo foto
+    //if(viewerState==VIEWER_IMAGE && !isImageReady && !isLblImReady)// Si se tomo foto
+    //if(viewerState==VIEWER_IMAGE || && isPhotoTaken)// Si se tomo foto
+    if(isPhotoTaken)// Si se tomo foto
     {
-      isLblImReady = false;
+      //isLblImReady = false;
       //isQvtkCloudReady = true;
       qvtkWidget->setParent(ui.centralwidget);
       ui.gridLayout->addWidget(qvtkWidget, 0, 0, 1, 1);
@@ -216,12 +237,16 @@ public:
 
       ui.gridLayout->removeWidget(btnGuardarFoto);
       btnGuardarFoto->setParent(NULL);
-      
+
+      //ui.gridLayout->addWidget(btnRegresarAFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignTop);
+      //btnRegresarAFoto->setVisible(true);
+      ui.btnRegresarAFoto->setEnabled(true);
       ui.gridLayout->update();    
       
       //viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRawPhotoAux(new pcl::PointCloud<pcl::PointXYZRGB>);;
-      *zedCloudRawPhotoAux = zedCloudRawPhoto;
+      //pcl::PointCloud<pcl::PointXYZRGB>::Ptr zedCloudRawPhotoAux(new pcl::PointCloud<pcl::PointXYZRGB>);;
+      //*zedCloudRawPhotoAux = zedCloudRawPhoto;
+      //viewer->updatePointCloud (zedCloudRawPhotoAux, "zedCloudRaw");
       viewer->updatePointCloud (zedCloudRaw, "zedCloudRaw");
       qvtkWidget->update ();
       viewerState=VIEWER_POINTCLOUD;
@@ -231,9 +256,12 @@ public:
   void btnTomarFotoPressed()
   {
     isImageReady = false;
-    isLblImReady = false;
+    //isLblImReady = false;
+    isPhotoTaken = true;
     btnTomarFoto->setVisible(false);
     btnGuardarFoto->setVisible(true);
+    ui.btnPointcloud->setEnabled(true);
+    //zedCloudRawPhoto = *zedCloudRaw;   
     /*QImage thumbnail = imDisplay;
     thumbnail = thumbnail.scaled(200, 100, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     
@@ -246,9 +274,35 @@ public:
     thumbnailCounter = (thumbnailCounter==MAX_THUMBAILS-1)?(MAX_THUMBAILS-1):(thumbnailCounter+1);*/
   }
 
+  void btnRegresarAFotoPressed()
+  {
+    if(viewerState==VIEWER_POINTCLOUD && isPhotoTaken)
+    {      
+      //isPhotoTaken = false; //Activa el recibimiento de imagenes
+      ui.lblIm->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(ui.lblIm, 0, 0, 1, 1);
+      
+      btnTomarFoto->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(btnTomarFoto, 0, 0, 1, 1, Qt::AlignLeft|Qt::AlignBottom);
+      btnTomarFoto->setVisible(false);
+
+      btnGuardarFoto->setParent(ui.centralwidget);
+      ui.gridLayout->addWidget(btnGuardarFoto, 0, 0, 1, 1, Qt::AlignRight|Qt::AlignBottom);
+      btnGuardarFoto->setVisible(true);
+
+      ui.gridLayout->removeWidget(qvtkWidget);
+      qvtkWidget->setParent(NULL);
+
+      ui.btnPointcloud->setEnabled(true);
+      ui.btnRegresarAFoto->setEnabled(false);
+      ui.gridLayout->update();
+      viewerState=VIEWER_PHOTO;
+    }
+  }
+
   void btnGuardarFotoPressed()
   { 
-    isQvtkCloudReady = true;
+    //isQvtkCloudReady = true;
     QImage thumbnail = imDisplay;
     thumbnail = thumbnail.scaled(200, 100, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     
@@ -260,9 +314,9 @@ public:
     ui.lstIm->setModel(model);
     thumbnailCounter = (thumbnailCounter==MAX_THUMBAILS-1)?(MAX_THUMBAILS-1):(thumbnailCounter+1);
 
-    ui.btnPointcloud->setEnabled(true);
-    zedCloudRawPhoto = *zedCloudRaw;
-    isQvtkCloudReady = false;
+    //ui.btnPointcloud->setEnabled(true);
+    //zedCloudRawPhoto = *zedCloudRaw;
+    //isQvtkCloudReady = false;
   }
 
   void onGainSliderChange(int position) 
@@ -274,15 +328,22 @@ public:
     //std::cout<<position<<std::endl;
     std_msgs::String msg;
     std::stringstream ss;
-    ss << position;
-    msg.data = ss.str();    
+    ss << "G" << position;
+    msg.data = ss.str();
+    pubGainExposure->publish(msg);
+  }
 
-    /**
-     * The publish() function is how you send messages. The parameter
-     * is the message object. The type of this object must agree with the type
-     * given as a template parameter to the advertise<>() call, as was done
-     * in the constructor above.
-     */
+  void onExposureSliderChange(int position) 
+  {
+    // Calculate float position of slider
+    //float positionF = position / float(STEPS);
+    //m_textEdit->setText( QString::number(positionF, 'f', 2) );
+    
+    //std::cout<<position<<std::endl;
+    std_msgs::String msg;
+    std::stringstream ss;
+    ss << "E"<<position;
+    msg.data = ss.str();
     pubGainExposure->publish(msg);
   }
 
